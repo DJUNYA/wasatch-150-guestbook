@@ -32,6 +32,17 @@
       max-width: 300px;
       font-family: sans-serif;
     }
+    #feedContainer {
+      position: absolute;
+      top: 60px; right: 0;
+      width: 300px;
+      height: calc(100% - 60px);
+      background: white;
+      overflow-y: auto;
+      padding: 10px;
+      border-left: 2px solid #f57c00;
+      z-index: 10;
+    }
     #formContainer h3 {
       margin-top: 0;
       color: #f57c00;
@@ -71,14 +82,24 @@
     <button onclick="dropPin()">Submit</button>
     <p id="errorMsg"></p>
   </div>
-  <script>
+  <div id="feedContainer">
+    <h3>Message Feed</h3>
+    <div id="messageFeed"></div>
+  </div>
 
-    //Cesium.Ion.defaultAccessToken = 'your-token-here';
-    
-    const viewer = new Cesium.Viewer('cesiumContainer');
+  <script>
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      imageryProvider: new Cesium.UrlTemplateImageryProvider({
+          url: 'https://a.tile.openstreetmap.org/{z}/{x}/{y}.png'
+      }),
+      terrainProvider: new Cesium.EllipsoidTerrainProvider(),
+      baseLayerPicker: false
+    });
 
     let userLat = null;
     let userLon = null;
+    const pins = [];
+    const messageFeed = document.getElementById("messageFeed");
 
     navigator.geolocation.getCurrentPosition(
       (pos) => {
@@ -115,29 +136,32 @@
 
       errorMsg.style.display = "none";
 
-      viewer.entities.add({
+      const pin = viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(userLon, userLat),
         billboard: {
-          image: "tigerpaw.png",
-          scale: 1.5
-        },
-        label: {
-          text: name,
-          font: "14pt sans-serif",
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          verticalOrigin: Cesium.VerticalOrigin.TOP,
-          pixelOffset: new Cesium.Cartesian2(0, -40)
+          image: "Images/tigerpaw.png",  // Make sure this file exists in your repository
+          scale: 1.0,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM
         },
         description: `<strong>${name}</strong><br><em>${years}</em><br>${message}`
       });
+
+      pins.push(pin);
+
+      const messageElement = document.createElement("div");
+      messageElement.innerHTML = `<strong>${name} (${years}):</strong> ${message}`;
+      messageFeed.prepend(messageElement);
 
       document.getElementById("name").value = "";
       document.getElementById("years").value = "";
       document.getElementById("message").value = "";
     }
+
+    viewer.selectedEntityChanged.addEventListener(function(entity) {
+      if (Cesium.defined(entity)) {
+        viewer.selectedEntity = entity;
+      }
+    });
   </script>
 </body>
 </html>
-
