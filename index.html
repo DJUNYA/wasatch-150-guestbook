@@ -136,11 +136,16 @@
 
       errorMsg.style.display = "none";
 
+      // Add a small random offset to avoid overlap
+      const randomOffset = () => (Math.random() - 0.5) * 0.02;
+      const adjustedLat = userLat + randomOffset();
+      const adjustedLon = userLon + randomOffset();
+
       const pin = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(userLon, userLat),
+        position: Cesium.Cartesian3.fromDegrees(adjustedLon, adjustedLat),
         billboard: {
-          image: "Images/tigerpaw.png",  // Make sure this file exists in your repository
-          scale: 1.0,
+          image: "Images/tigerpaw.png",
+          scale: 0.8,
           verticalOrigin: Cesium.VerticalOrigin.BOTTOM
         },
         description: `<strong>${name}</strong><br><em>${years}</em><br>${message}`
