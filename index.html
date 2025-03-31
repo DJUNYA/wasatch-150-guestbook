@@ -1,4 +1,4 @@
-Use this document and then add those update to this for a new updated index file <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
@@ -58,6 +58,31 @@ Use this document and then add those update to this for a new updated index file
       display: none;
       margin-top: 8px;
     }
+    #feedContainer {
+      position: absolute;
+      top: 60px; right: 20px;
+      z-index: 10;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 300px;
+      font-family: sans-serif;
+    }
+    #feedContainer h3 {
+      margin-top: 0;
+      color: #f57c00;
+    }
+    #feedList {
+      list-style-type: none;
+      padding: 0;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    #feedList li {
+      padding: 8px;
+      border-bottom: 1px solid #ccc;
+    }
   </style>
 </head>
 <body>
@@ -71,12 +96,12 @@ Use this document and then add those update to this for a new updated index file
     <button onclick="dropPin()">Submit</button>
     <p id="errorMsg"></p>
   </div>
+  <div id="feedContainer">
+    <h3>Guestbook Messages</h3>
+    <ul id="feedList"></ul>
+  </div>
   <script>
-
-    //Cesium.Ion.defaultAccessToken = 'your-token-here';
-    
     const viewer = new Cesium.Viewer('cesiumContainer');
-
     let userLat = null;
     let userLon = null;
 
@@ -102,24 +127,21 @@ Use this document and then add those update to this for a new updated index file
       const years = document.getElementById("years").value.trim();
       const message = document.getElementById("message").value.trim();
       const errorMsg = document.getElementById("errorMsg");
-
-      const banned = ["badword1", "badword2", "racist", "offensive", "sex", "drugs"];
-      const check = `${name} ${years} ${message}`.toLowerCase();
-      const invalid = banned.some(w => check.includes(w));
-
-      if (!userLat || !userLon || !name || !years || !message || invalid) {
-        errorMsg.textContent = invalid ? "⚠️ Inappropriate content." : "⚠️ Please complete all fields.";
+      const feedList = document.getElementById("feedList");
+      
+      if (!userLat || !userLon || !name || !years || !message) {
+        errorMsg.textContent = "⚠️ Please complete all fields.";
         errorMsg.style.display = "block";
         return;
       }
-
+      
       errorMsg.style.display = "none";
-
+      
       viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(userLon, userLat),
         billboard: {
           image: "Images/tigerpaw.png",
-          scale: .5
+          scale: 0.3
         },
         label: {
           text: name,
@@ -132,7 +154,11 @@ Use this document and then add those update to this for a new updated index file
         },
         description: `<strong>${name}</strong><br><em>${years}</em><br>${message}`
       });
-
+      
+      let listItem = document.createElement("li");
+      listItem.innerHTML = `<strong>${name}</strong> (${years}): ${message}`;
+      feedList.appendChild(listItem);
+      
       document.getElementById("name").value = "";
       document.getElementById("years").value = "";
       document.getElementById("message").value = "";
