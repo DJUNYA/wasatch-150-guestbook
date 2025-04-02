@@ -88,25 +88,8 @@
     firebase.initializeApp(firebaseConfig);
     const db = firebase.database();
 
-    // 🌍 Cesium setup with clustering
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      clustering: true
-    });
-
-    viewer.dataSources.add(new Cesium.CustomDataSource("guestbook"));
-
-    viewer.scene.primitives.add(
-      new Cesium.PointPrimitiveCollection({
-        clustering: {
-          enabled: true,
-          pixelRange: 20,
-          minimumClusterSize: 2,
-          clusterBillboards: true,
-          clusterLabels: true,
-          clusterPoints: true
-        }
-      })
-    );
+    // 🌍 Cesium setup
+    const viewer = new Cesium.Viewer('cesiumContainer');
 
     let userLat = null;
     let userLon = null;
@@ -163,22 +146,22 @@
     db.ref("guestbook").on("child_added", (snapshot) => {
       const data = snapshot.val();
 
-      // 🗺️ Add pin to Cesium with clustering
+      // 🗺️ Add pin to Cesium
       viewer.entities.add({
         position: Cesium.Cartesian3.fromDegrees(data.lon, data.lat),
         billboard: {
           image: "Images/tigerpaw.png",
-          scale: 0.5,
+          scale: 0.3, // 🔹 Smaller pin size
           show: true
         },
         label: {
           text: data.name,
-          font: "12pt sans-serif",
+          font: "10pt sans-serif", // 🔹 Smaller font
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 2,
-          verticalOrigin: Cesium.VerticalOrigin.TOP,
-          pixelOffset: new Cesium.Cartesian2(0, -40),
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM, // 🔹 Adjust label position
+          pixelOffset: new Cesium.Cartesian2(0, -25), // 🔹 Move text below the pin
           show: true
         },
         description: `<strong>${data.name}</strong><br><em>${data.years}</em><br>${data.message}`
