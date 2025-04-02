@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8" />
   <title>Wasatch 150th Guestbook</title>
-  <script src="cesium/Cesium.js"></script>
-  <link href="cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="https://unpkg.com/cesium@latest/Build/Cesium/Cesium.js"></script>
+  <link href="https://unpkg.com/cesium@latest/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
     html, body, #cesiumContainer {
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
@@ -101,8 +101,9 @@
   </div>
 
   <script>
-    // Cesium setup
-    const viewer = new Cesium.Viewer('cesiumContainer');
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain()
+    });
 
     let userLat = null;
     let userLon = null;
@@ -124,7 +125,6 @@
       }
     );
 
-    // Feed section
     function addMessageToFeed(name, years, message) {
       const feedList = document.getElementById("feedList");
       const listItem = document.createElement("li");
@@ -132,7 +132,6 @@
       feedList.appendChild(listItem);
     }
 
-    // Drop pin and add message
     function dropPin() {
       const name = document.getElementById("name").value.trim();
       const years = document.getElementById("years").value.trim();
@@ -144,7 +143,7 @@
         errorMsg.style.display = "block";
         return;
       }
-      
+
       errorMsg.style.display = "none";
 
       // Small random offset to prevent exact overlap
