@@ -4,12 +4,17 @@
   <meta charset="utf-8" />
   <title>Wasatch 150th Guestbook</title>
   <script src="cesium/Cesium/Cesium.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/9.6.1/firebase-database.js"></script>
   <link href="cesium/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
-    html, body, #cesiumContainer {
+    html, body {
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
+    }
+    #cesiumContainer {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
     }
     #header {
       position: absolute;
@@ -75,25 +80,15 @@
   </div>
 
   <script>
-    // 🔥 Initialize Firebase
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      databaseURL: "https://YOUR_PROJECT_ID-default-rtdb.firebaseio.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      messagingSenderId: "YOUR_SENDER_ID",
-      appId: "YOUR_APP_ID"
-    };
-    firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
-
-    // 🌍 Cesium setup
-    const viewer = new Cesium.Viewer('cesiumContainer');
+    // 🌍 Initialize Cesium Globe
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain()
+    });
 
     let userLat = null;
     let userLon = null;
 
+    // 🛰️ Fly to user's location
     navigator.geolocation.getCurrentPosition(
       (pos) => {
         userLat = pos.coords.latitude;
@@ -133,8 +128,35 @@
         timestamp: Date.now()
       };
 
-      // 🔥 Save message to Firebase
-      db.ref("guestbook").push(newEntry);
+      // 🗺️ Add pin to Cesium
+      viewer.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(newEntry.lon, newEntry.lat),
+        billboard: {
+          image: "Images/tigerpaw.png",
+          scale: 0.2, // 🔹 Small pin
+          show: true
+        },
+        label: {
+          text: newEntry.name,
+          font: "12pt sans-serif", 
+          fillColor: Cesium.Color.WHITE,
+          outlineColor: Cesium.Color.BLACK,
+          outlineWidth: 2,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -20), 
+          show: true
+        },
+        description: `<strong>${newEntry.name}</strong><br><em>${newEntry.years}</em><br>${newEntry.message}`
+      });
+
+      // 📜 Add message to feed
+      const feedList = document.getElementById("feedList");
+      const li = document.createElement("li");
+      li.innerHTML = `<strong>${newEntry.name}</strong> (${newEntry.years}): ${newEntry.message}`;
+      feedList.prepend(li);
+
+      // 🔹 Save to localStorage
+      saveMessage(newEntry);
 
       // Clear input fields
       document.getElementById("name").value = "";
@@ -142,37 +164,46 @@
       document.getElementById("message").value = "";
     }
 
-    // 🔄 Load existing messages from Firebase
-    db.ref("guestbook").on("child_added", (snapshot) => {
-      const data = snapshot.val();
+    function saveMessage(entry) {
+      let messages = JSON.parse(localStorage.getItem("guestbookMessages")) || [];
+      messages.push(entry);
+      localStorage.setItem("guestbookMessages", JSON.stringify(messages));
+    }
 
-      // 🗺️ Add pin to Cesium
-      viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(data.lon, data.lat),
-        billboard: {
-          image: "Images/tigerpaw.png",
-          scale: 0.3, // 🔹 Smaller pin size
-          show: true
-        },
-        label: {
-          text: data.name,
-          font: "10pt sans-serif", // 🔹 Smaller font
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM, // 🔹 Adjust label position
-          pixelOffset: new Cesium.Cartesian2(0, -25), // 🔹 Move text below the pin
-          show: true
-        },
-        description: `<strong>${data.name}</strong><br><em>${data.years}</em><br>${data.message}`
+    function loadMessages() {
+      let messages = JSON.parse(localStorage.getItem("guestbookMessages")) || [];
+      messages.forEach(data => {
+        // 🗺️ Load previous pins
+        viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(data.lon, data.lat),
+          billboard: {
+            image: "Images/tigerpaw.png",
+            scale: 0.2,
+            show: true
+          },
+          label: {
+            text: data.name,
+            font: "12pt sans-serif", 
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+            pixelOffset: new Cesium.Cartesian2(0, -20), 
+            show: true
+          },
+          description: `<strong>${data.name}</strong><br><em>${data.years}</em><br>${data.message}`
+        });
+
+        // 📜 Load previous messages in the feed
+        const feedList = document.getElementById("feedList");
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${data.name}</strong> (${data.years}): ${data.message}`;
+        feedList.prepend(li);
       });
+    }
 
-      // 📜 Add message to feed
-      const feedList = document.getElementById("feedList");
-      const li = document.createElement("li");
-      li.innerHTML = `<strong>${data.name}</strong> (${data.years}): ${data.message}`;
-      feedList.prepend(li); // Add newest at the top
-    });
+    // 🔄 Load previous messages on page load
+    window.onload = loadMessages;
 
   </script>
 </body>
