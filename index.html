@@ -58,31 +58,6 @@
       display: none;
       margin-top: 8px;
     }
-    #feedContainer {
-      position: absolute;
-      top: 60px; right: 20px;
-      z-index: 10;
-      background: rgba(255,255,255,0.95);
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
-      max-width: 300px;
-      font-family: sans-serif;
-    }
-    #feedContainer h3 {
-      margin-top: 0;
-      color: #f57c00;
-    }
-    #feedList {
-      list-style-type: none;
-      padding: 0;
-      max-height: 300px;
-      overflow-y: auto;
-    }
-    #feedList li {
-      padding: 8px;
-      border-bottom: 1px solid #ccc;
-    }
   </style>
 </head>
 <body>
@@ -96,12 +71,12 @@
     <button onclick="dropPin()">Submit</button>
     <p id="errorMsg"></p>
   </div>
-  <div id="feedContainer">
-    <h3>Guestbook Messages</h3>
-    <ul id="feedList"></ul>
-  </div>
+
   <script>
-    const viewer = new Cesium.Viewer('cesiumContainer');
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      clustering: true
+    });
+
     let userLat = null;
     let userLon = null;
 
@@ -122,47 +97,82 @@
       }
     );
 
+    // Data Source for clustering
+    const dataSource = new Cesium.CustomDataSource("guestbook");
+    viewer.dataSources.add(dataSource);
+
+    // Configure Clustering
+    const clusterOptions = dataSource.clustering;
+    clusterOptions.enabled = true;
+    clusterOptions.pixelRange = 50; 
+    clusterOptions.minimumClusterSize = 2;
+
     function dropPin() {
       const name = document.getElementById("name").value.trim();
       const years = document.getElementById("years").value.trim();
       const message = document.getElementById("message").value.trim();
       const errorMsg = document.getElementById("errorMsg");
-      const feedList = document.getElementById("feedList");
-      
+
       if (!userLat || !userLon || !name || !years || !message) {
         errorMsg.textContent = "⚠️ Please complete all fields.";
         errorMsg.style.display = "block";
         return;
       }
-      
+
       errorMsg.style.display = "none";
-      
-      viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(userLon, userLat),
+
+      // Random offset to avoid exact pin overlap
+      const offsetLat = (Math.random() - 0.5) * 0.0005;
+      const offsetLon = (Math.random() - 0.5) * 0.0005;
+
+      const pinEntity = dataSource.entities.add({
+        position: Cesium.Cartesian3.fromDegrees(userLon + offsetLon, userLat + offsetLat),
         billboard: {
           image: "Images/tigerpaw.png",
-          scale: 0.1
+          scale: 0.5
         },
         label: {
           text: name,
-          font: "14pt sans-serif",
+          font: "12pt sans-serif",
           fillColor: Cesium.Color.WHITE,
           outlineColor: Cesium.Color.BLACK,
           outlineWidth: 2,
           verticalOrigin: Cesium.VerticalOrigin.TOP,
-          pixelOffset: new Cesium.Cartesian2(0, -40)
+          pixelOffset: new Cesium.Cartesian2((Math.random() - 0.5) * 20, -40) // Randomize label position
         },
         description: `<strong>${name}</strong><br><em>${years}</em><br>${message}`
       });
-      
-      let listItem = document.createElement("li");
-      listItem.innerHTML = `<strong>${name}</strong> (${years}): ${message}`;
-      feedList.appendChild(listItem);
-      
+
       document.getElementById("name").value = "";
       document.getElementById("years").value = "";
       document.getElementById("message").value = "";
     }
+
+    // Cluster Styling
+    clusterOptions.clusterEvent.addEventListener((clusteredEntities, cluster) => {
+      cluster.billboard.show = true;
+      cluster.billboard.image = "Images/cluster.png";
+      cluster.billboard.scale = 0.8;
+      cluster.label.show = true;
+      cluster.label.text = `${clusteredEntities.length}`;
+      cluster.label.fillColor = Cesium.Color.WHITE;
+      cluster.label.verticalOrigin = Cesium.VerticalOrigin.BOTTOM;
+    });
+
+    // Adjust Label Sizes on Zoom
+    viewer.scene.preRender.addEventListener(() => {
+      const zoomLevel = viewer.camera.positionCartographic.height;
+      dataSource.entities.values.forEach(entity => {
+        if (entity.label) {
+          if (zoomLevel < 1000000) {
+            entity.label.font = "14pt sans-serif"; // Larger font when zoomed in
+          } else {
+            entity.label.font = "10pt sans-serif"; // Smaller font when zoomed out
+          }
+        }
+      });
+    });
+
   </script>
 </body>
 </html>
