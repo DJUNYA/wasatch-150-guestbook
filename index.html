@@ -77,27 +77,25 @@
     const dataSource = new Cesium.CustomDataSource('guestPins');
     viewer.dataSources.add(dataSource);
 
+    // Enable Clustering
     dataSource.clustering.enabled = true;
-    dataSource.clustering.pixelRange = 30;
-    dataSource.clustering.minimumClusterSize = 3;
+    dataSource.clustering.pixelRange = 30; // Distance for clusters to form
+    dataSource.clustering.minimumClusterSize = 3; // Minimum entities to form a cluster
 
-    const pinImage = "Images/tigerpaw.png";
+    const pinImage = "Images/tigerpaw.png"; // Custom pin image
 
+    // Define behavior when clusters are formed
     dataSource.clustering.clusterEvent.addEventListener((clusteredEntities, cluster) => {
       cluster.label.show = true;
-      cluster.label.text = clusteredEntities.length.toString();
+      cluster.label.text = clusteredEntities.length.toString(); // Display count of pins in the cluster
       cluster.label.font = "16pt sans-serif";
       cluster.label.fillColor = Cesium.Color.WHITE;
       cluster.label.outlineColor = Cesium.Color.BLACK;
       cluster.label.outlineWidth = 4;
       cluster.billboard.show = true;
-      cluster.billboard.image = pinImage;
-      cluster.billboard.scale = 0.3;
-
-      // Hide labels when clustered
-      clusteredEntities.forEach(entity => {
-        if (entity.label) entity.label.show = false;
-      });
+      cluster.billboard.id = cluster.label.id;
+      cluster.billboard.image = pinImage; // Use the custom pin image
+      cluster.billboard.scale = 0.3; // Scale down the cluster icon
     });
 
     let userLat = null, userLon = null;
@@ -111,6 +109,7 @@
       viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0) });
     });
 
+    // Function to drop a pin and save the message
     function dropPin() {
       const name = document.getElementById("name").value.trim();
       const years = document.getElementById("years").value.trim();
@@ -127,6 +126,7 @@
       db.ref('messages').push(pinData);
     }
 
+    // Function to retrieve messages from Firebase and display them
     db.ref('messages').on('value', snapshot => {
       const data = snapshot.val();
       if (!data) return;
@@ -150,7 +150,7 @@
             outlineWidth: 2,
             verticalOrigin: Cesium.VerticalOrigin.TOP,
             pixelOffset: new Cesium.Cartesian2(0, -35),
-            show: true
+            show: false
           },
           description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
