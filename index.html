@@ -3,37 +3,96 @@
 <head>
   <meta charset="utf-8" />
   <title>Wasatch 150th Guestbook</title>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.109/Build/Cesium/Cesium.js"></script>
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.109/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <script src="cesium/Cesium/Cesium.js"></script>
+  <link href="cesium/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
     html, body, #cesiumContainer {
       width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
     }
     #header {
-      position: absolute; top: 0; width: 100%; background: #f57c00; color: white;
-      text-align: center; padding: 10px; z-index: 5; font-size: 1.5em; font-weight: bold;
+      position: absolute;
+      top: 0; width: 100%;
+      background: #f57c00;
+      color: white;
+      text-align: center;
+      padding: 10px;
+      z-index: 5;
+      font-size: 1.5em;
+      font-weight: bold;
       font-family: sans-serif;
     }
     #formContainer {
-      position: absolute; top: 60px; left: 20px; z-index: 10; background: rgba(255,255,255,0.95);
-      padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3); max-width: 300px; font-family: sans-serif;
+      position: absolute;
+      top: 60px; left: 20px;
+      z-index: 10;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 300px;
+      font-family: sans-serif;
+    }
+    #formContainer h3 {
+      margin-top: 0;
+      color: #f57c00;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 8px;
+      font-size: 14px;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #f57c00;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e65100;
+    }
+    #errorMsg {
+      color: red;
+      display: none;
+      margin-top: 8px;
     }
     #feedContainer {
-      position: absolute; top: 60px; right: 20px; z-index: 10; background: rgba(255,255,255,0.95);
-      padding: 15px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.3); max-width: 300px; font-family: sans-serif;
-      overflow-y: auto; height: 90%;
+      position: absolute;
+      top: 60px; right: 20px;
+      z-index: 10;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 300px;
+      font-family: sans-serif;
+      overflow-y: auto;
+      height: 90%;
     }
-    input, textarea, button { width: 100%; margin-top: 8px; font-size: 14px; padding: 6px; border: 1px solid #ccc; border-radius: 4px; }
-    button { background-color: #f57c00; color: white; border: none; cursor: pointer; }
-    button:hover { background-color: #e65100; }
-    #feedList { list-style-type: none; padding: 0; }
-    #feedList li { background-color: #f3f3f3; padding: 8px; margin-bottom: 10px; border-radius: 4px; }
+    #feedContainer h3 {
+      color: #f57c00;
+      margin-top: 0;
+    }
+    #feedList {
+      list-style-type: none;
+      padding: 0;
+    }
+    #feedList li {
+      background-color: #f3f3f3;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    #feedList li strong {
+      color: #f57c00;
+    }
   </style>
 </head>
 <body>
   <div id="header">🎉 Happy 150th Anniversary, Wasatch Academy! 🎉</div>
   <div id="cesiumContainer"></div>
-
   <div id="formContainer">
     <h3>Sign the Guestbook</h3>
     <input id="name" placeholder="Your Name" />
@@ -48,9 +107,10 @@
     <ul id="feedList"></ul>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
@@ -62,54 +122,44 @@
       appId: "1:192403964274:web:daf759134d950edda35deb",
       measurementId: "G-XYS5EHZ92L"
     };
+
     firebase.initializeApp(firebaseConfig);
-    const db = firebase.database();
+    const database = firebase.database();
   </script>
 
   <script>
-    const viewer = new Cesium.Viewer('cesiumContainer', {
-      shouldAnimate: true,
-      selectionIndicator: false,
-      infoBox: false,
-      terrainProvider: Cesium.createWorldTerrain()
-    });
+    const viewer = new Cesium.Viewer('cesiumContainer');
+    let userLat = null;
+    let userLon = null;
 
-    const dataSource = new Cesium.CustomDataSource('guestPins');
-    viewer.dataSources.add(dataSource);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userLat = pos.coords.latitude;
+        userLon = pos.coords.longitude;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0)
+        });
+      },
+      () => {
+        userLat = 39.5444;
+        userLon = -111.4566;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0)
+        });
+      }
+    );
 
-    dataSource.clustering.enabled = true;
-    dataSource.clustering.pixelRange = 30;
-    dataSource.clustering.minimumClusterSize = 3;
-
-    const pinImage = "Images/tigerpaw.png";
-
-    dataSource.clustering.clusterEvent.addEventListener((clusteredEntities, cluster) => {
-      cluster.label.show = true;
-      cluster.label.text = clusteredEntities.length.toString();
-      cluster.label.font = "16pt sans-serif";
-      cluster.label.fillColor = Cesium.Color.WHITE;
-      cluster.label.outlineColor = Cesium.Color.BLACK;
-      cluster.label.outlineWidth = 4;
-      cluster.billboard.show = true;
-      cluster.billboard.image = pinImage;
-      cluster.billboard.scale = 0.3;
-
-      // Hide labels when clustered
-      clusteredEntities.forEach(entity => {
-        if (entity.label) entity.label.show = false;
+    function saveMessage(name, years, message, lat, lon) {
+      const newMessageRef = database.ref('messages').push();
+      newMessageRef.set({
+        name: name,
+        years: years,
+        message: message,
+        lat: lat,
+        lon: lon,
+        timestamp: Date.now()
       });
-    });
-
-    let userLat = null, userLon = null;
-
-    navigator.geolocation.getCurrentPosition(pos => {
-      userLat = pos.coords.latitude;
-      userLon = pos.coords.longitude;
-      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0) });
-    }, () => {
-      userLat = 39.5444; userLon = -111.4566;
-      viewer.camera.flyTo({ destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0) });
-    });
+    }
 
     function dropPin() {
       const name = document.getElementById("name").value.trim();
@@ -117,28 +167,39 @@
       const message = document.getElementById("message").value.trim();
       const errorMsg = document.getElementById("errorMsg");
 
-      if (!name || !years || !message || !userLat || !userLon) {
-        errorMsg.textContent = "⚠️ Please fill all fields.";
+      const banned = ["badword1", "badword2", "racist", "offensive", "sex", "drugs"];
+      const check = `${name} ${years} ${message}`.toLowerCase();
+      const invalid = banned.some(w => check.includes(w));
+
+      if (!userLat || !userLon || !name || !years || !message || invalid) {
+        errorMsg.textContent = invalid ? "⚠️ Inappropriate content." : "⚠️ Please complete all fields.";
+        errorMsg.style.display = "block";
         return;
       }
-      errorMsg.textContent = "";
 
-      const pinData = { name, years, message, lat: userLat, lon: userLon, timestamp: Date.now() };
-      db.ref('messages').push(pinData);
+      errorMsg.style.display = "none";
+
+      saveMessage(name, years, message, userLat, userLon);
+
+      document.getElementById("name").value = "";
+      document.getElementById("years").value = "";
+      document.getElementById("message").value = "";
     }
 
-    db.ref('messages').on('value', snapshot => {
+    // Live update from Firebase
+    database.ref('messages').on('value', (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
-      dataSource.entities.removeAll();
-      document.getElementById("feedList").innerHTML = '';
+      viewer.entities.removeAll();
+      const feedList = document.getElementById("feedList");
+      feedList.innerHTML = '';
 
       Object.values(data).forEach(entry => {
-        dataSource.entities.add({
+        viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
-            image: pinImage,
+            image: "Images/tigerpaw.png", // replace with full URL if needed
             scale: 0.1,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM
           },
@@ -149,15 +210,14 @@
             outlineColor: Cesium.Color.BLACK,
             outlineWidth: 2,
             verticalOrigin: Cesium.VerticalOrigin.TOP,
-            pixelOffset: new Cesium.Cartesian2(0, -35),
-            show: true
+            pixelOffset: new Cesium.Cartesian2(0, -40)
           },
           description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
 
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
-        document.getElementById("feedList").prepend(li);
+        const messageElement = document.createElement("li");
+        messageElement.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
+        feedList.prepend(messageElement);
       });
     });
   </script>
