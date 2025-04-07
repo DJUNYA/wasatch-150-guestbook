@@ -108,10 +108,29 @@
     <ul id="feedList"></ul>
   </div>
 
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
   <script>
-    // Cesium Viewer setup
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
+      authDomain: "wasatch-150-guestbook.firebaseapp.com",
+      databaseURL: "https://wasatch-150-guestbook-default-rtdb.firebaseio.com",
+      projectId: "wasatch-150-guestbook",
+      storageBucket: "wasatch-150-guestbook.appspot.com",
+      messagingSenderId: "192403964274",
+      appId: "1:192403964274:web:daf759134d950edda35deb",
+      measurementId: "G-XYS5EHZ92L"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+  </script>
+
+  <!-- App Logic -->
+  <script>
     const viewer = new Cesium.Viewer('cesiumContainer');
-    
+
     let userLat = null;
     let userLon = null;
 
@@ -132,7 +151,18 @@
       }
     );
 
-    // Drop a pin and update the feed
+    function saveMessage(name, years, message, lat, lon) {
+      const ref = database.ref("messages").push();
+      ref.set({
+        name: name,
+        years: years,
+        message: message,
+        lat: lat,
+        lon: lon,
+        timestamp: Date.now()
+      });
+    }
+
     function dropPin() {
       const name = document.getElementById("name").value.trim();
       const years = document.getElementById("years").value.trim();
@@ -151,100 +181,47 @@
 
       errorMsg.style.display = "none";
 
-      // Add pin to Cesium globe
-      viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(userLon, userLat),
-        billboard: {
-          image: "Images/tigerpaw.png",
-          scale: 0.1
-        },
-        label: {
-          text: name,
-          font: "14pt sans-serif",
-          fillColor: Cesium.Color.WHITE,
-          outlineColor: Cesium.Color.BLACK,
-          outlineWidth: 2,
-          verticalOrigin: Cesium.VerticalOrigin.TOP,
-          pixelOffset: new Cesium.Cartesian2(0, -40)
-        },
-        description: `<strong>${name}</strong><br><em>${years}</em><br>${message}`
-      });
+      saveMessage(name, years, message, userLat, userLon);
 
-      // Add message to the feed
-      const feedList = document.getElementById("feedList");
-      const listItem = document.createElement("li");
-      listItem.innerHTML = `<strong>${name}</strong> (${years}):<br>${message}`;
-      feedList.appendChild(listItem);
-
-      // Clear the form
+      // Clear form
       document.getElementById("name").value = "";
       document.getElementById("years").value = "";
       document.getElementById("message").value = "";
     }
-  </script>
-  <!-- Add this to your <head> or just before your closing </body> tag -->
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
-<script>
-  const firebaseConfig = {
-    apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
-    authDomain: "wasatch-150-guestbook.firebaseapp.com",
-    databaseURL: "https://wasatch-150-guestbook-default-rtdb.firebaseio.com",
-    projectId: "wasatch-150-guestbook",
-    storageBucket: "wasatch-150-guestbook.firebasestorage.app",
-    messagingSenderId: "192403964274",
-    appId: "1:192403964274:web:daf759134d950edda35deb",
-    measurementId: "G-XYS5EHZ92L"
-  };
 
-  // Initialize Firebase
-  firebase.initializeApp(firebaseConfig);
-  const database = firebase.database();
-  function saveMessage(name, years, message, lat, lon) {
-    const newMessageRef = firebase.database().ref('messages').push();
-    newMessageRef.set({
-        name: name,
-        years: years,
-        message: message,
-        lat: lat,
-        lon: lon,
-        timestamp: Date.now()
-    });
-}
+    // Load existing messages from Firebase
+    firebase.database().ref("messages").on("value", snapshot => {
+      const data = snapshot.val();
+      if (!data) return;
 
-// Retrieve messages from Firebase
-firebase.database().ref('messages').on('value', (snapshot) => {
-    const data = snapshot.val();
-    if (!data) return;
+      viewer.entities.removeAll();
+      const feedList = document.getElementById("feedList");
+      feedList.innerHTML = "";
 
-    // Clear existing pins and messages
-    viewer.entities.removeAll();
-    messageFeed.innerHTML = '';
-
-    Object.keys(data).forEach((key) => {
-        const entry = data[key];
-
-        // Create pin on globe
+      Object.values(data).forEach(entry => {
         viewer.entities.add({
-            position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
-            billboard: {
-                image: "https://YOUR-GITHUB-USERNAME.github.io/YOUR-REPO-NAME/Images/tigerpaw.png",
-                scale: 0.8,
-                verticalOrigin: Cesium.VerticalOrigin.BOTTOM
-            },
-            description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
+          position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
+          billboard: {
+            image: "Images/tigerpaw.png", // Replace if needed
+            scale: 0.1
+          },
+          label: {
+            text: entry.name,
+            font: "14pt sans-serif",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, -40)
+          },
+          description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
 
-        // Add message to the feed
-        const messageElement = document.createElement("div");
-        messageElement.innerHTML = `<strong>${entry.name} (${entry.years}):</strong> ${entry.message}`;
-        messageFeed.prepend(messageElement);
+        const li = document.createElement("li");
+        li.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
+        feedList.prepend(li);
+      });
     });
-});
-
-// Call saveMessage() in your dropPin() function
-saveMessage(name, years, message, adjustedLat, adjustedLon);
-
-</script>
+  </script>
 </body>
 </html>
