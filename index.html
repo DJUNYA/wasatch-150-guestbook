@@ -102,15 +102,15 @@
     <p id="errorMsg"></p>
   </div>
 
-  <!-- Feed Section -->
   <div id="feedContainer">
     <h3>Guestbook Messages</h3>
     <ul id="feedList"></ul>
   </div>
 
-  <!-- Firebase -->
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
@@ -127,10 +127,8 @@
     const database = firebase.database();
   </script>
 
-  <!-- App Logic -->
   <script>
     const viewer = new Cesium.Viewer('cesiumContainer');
-
     let userLat = null;
     let userLon = null;
 
@@ -152,8 +150,8 @@
     );
 
     function saveMessage(name, years, message, lat, lon) {
-      const ref = database.ref("messages").push();
-      ref.set({
+      const newMessageRef = database.ref('messages').push();
+      newMessageRef.set({
         name: name,
         years: years,
         message: message,
@@ -183,27 +181,27 @@
 
       saveMessage(name, years, message, userLat, userLon);
 
-      // Clear form
       document.getElementById("name").value = "";
       document.getElementById("years").value = "";
       document.getElementById("message").value = "";
     }
 
-    // Load existing messages from Firebase
-    firebase.database().ref("messages").on("value", snapshot => {
+    // Live update from Firebase
+    database.ref('messages').on('value', (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
       viewer.entities.removeAll();
       const feedList = document.getElementById("feedList");
-      feedList.innerHTML = "";
+      feedList.innerHTML = '';
 
       Object.values(data).forEach(entry => {
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
-            image: "Images/tigerpaw.png", // Replace if needed
-            scale: 0.1
+            image: "Images/tigerpaw.png", // replace with full URL if needed
+            scale: 0.1,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM
           },
           label: {
             text: entry.name,
@@ -217,9 +215,9 @@
           description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
 
-        const li = document.createElement("li");
-        li.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
-        feedList.prepend(li);
+        const messageElement = document.createElement("li");
+        messageElement.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
+        feedList.prepend(messageElement);
       });
     });
   </script>
