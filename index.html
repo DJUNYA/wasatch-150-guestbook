@@ -182,5 +182,24 @@
       document.getElementById("message").value = "";
     }
   </script>
+  <!-- Add this to your <head> or just before your closing </body> tag -->
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+<script>
+  const firebaseConfig = {
+    apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
+    authDomain: "wasatch-150-guestbook.firebaseapp.com",
+    databaseURL: "https://wasatch-150-guestbook-default-rtdb.firebaseio.com",
+    projectId: "wasatch-150-guestbook",
+    storageBucket: "wasatch-150-guestbook.firebasestorage.app",
+    messagingSenderId: "192403964274",
+    appId: "1:192403964274:web:daf759134d950edda35deb",
+    measurementId: "G-XYS5EHZ92L"
+  };
+
+  // Initialize Firebase
+  firebase.initializeApp(firebaseConfig);
+  const database = firebase.database();
+</script>
 </body>
 </html>
