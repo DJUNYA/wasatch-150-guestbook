@@ -45,46 +45,81 @@
 
     viewer.scene.globe.enableLighting = true;
 
-    // Sample data (replace with Firebase later)
-    const messagesByLocation = [
-      {
-        lat: 40.7608,
-        lon: -111.8910,
-        messages: [
-          "Happy 150th from Salt Lake City!",
-          "Wasatch rocks! 💙",
-          "Greetings from Utah!"
-        ]
-      },
-      {
-        lat: 51.5074,
-        lon: -0.1278,
-        messages: [
-          "Cheers from London 🇬🇧",
-          "Happy Anniversary!"
-        ]
-      }
-    ];
+    // Firebase-style mock data
+    const firebaseData = {
+      "loc1": { lat: 40.76, lon: -111.89, messages: ["Hi from SLC!"], names: ["Ozma"] },
+      "loc2": { lat: 40.77, lon: -111.90, messages: ["Wasatch forever!"], names: ["Alex"] },
+      "loc3": { lat: 51.50, lon: -0.12, messages: ["Love from London!", "Cheers!"], names: ["Liam", "Sophie"] }
+    };
 
-    // Add pins to globe
-    messagesByLocation.forEach(loc => {
+    // Distance check (Haversine formula)
+    function areClose(lat1, lon1, lat2, lon2, thresholdKm = 20) {
+      const toRad = deg => deg * Math.PI / 180;
+      const R = 6371;
+      const dLat = toRad(lat2 - lat1);
+      const dLon = toRad(lon2 - lon1);
+      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
+      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+      return R * c < thresholdKm;
+    }
+
+    // Cluster logic
+    function clusterMessages(entries) {
+      const clusters = [];
+      for (const id in entries) {
+        const entry = entries[id];
+        let found = false;
+        for (const cluster of clusters) {
+          if (areClose(entry.lat, entry.lon, cluster.lat, cluster.lon)) {
+            cluster.messages.push(...entry.messages);
+            cluster.names.push(...entry.names);
+            found = true;
+            break;
+          }
+        }
+        if (!found) {
+          clusters.push({
+            lat: entry.lat,
+            lon: entry.lon,
+            messages: [...entry.messages],
+            names: [...entry.names]
+          });
+        }
+      }
+      return clusters;
+    }
+
+    function displayName(names) {
+      if (names.length === 1) return names[0];
+      return `${names[0]} +${names.length - 1}`;
+    }
+
+    const clusters = clusterMessages(firebaseData);
+
+    clusters.forEach(cluster => {
       const entity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(loc.lon, loc.lat),
+        position: Cesium.Cartesian3.fromDegrees(cluster.lon, cluster.lat),
         billboard: {
           image: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
           scale: 0.05,
         },
-        description: loc.messages.join("<br><br>") // fallback
+        label: {
+          text: displayName(cluster.names),
+          font: "16px sans-serif",
+          fillColor: Cesium.Color.BLACK,
+          outlineColor: Cesium.Color.WHITE,
+          outlineWidth: 2,
+          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
+          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
+          pixelOffset: new Cesium.Cartesian2(0, -30),
+        },
+        messageList: cluster.messages
       });
-
-      entity.messageList = loc.messages;
     });
 
-    // Popup elements
     const popup = document.getElementById("popup");
     const popupContent = document.getElementById("popupContent");
 
-    // Handle click on pin
     const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
     handler.setInputAction(function (movement) {
       const pickedObject = viewer.scene.pick(movement.position);
@@ -94,7 +129,6 @@
           viewer.scene,
           cartesian
         );
-
         const messages = pickedObject.id.messageList;
         popupContent.innerHTML = messages.map(m => `<p>${m}</p>`).join("<hr>");
         popup.style.left = `${screenPos.x + 10}px`;
