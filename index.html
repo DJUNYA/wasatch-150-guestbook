@@ -1,152 +1,225 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Wasatch 150th Guestbook Globe</title>
-  <script src="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Cesium.js"></script>
-  <link href="https://cesium.com/downloads/cesiumjs/releases/1.115/Build/Cesium/Widgets/widgets.css" rel="stylesheet">
+  <meta charset="utf-8" />
+  <title>Wasatch 150th Guestbook</title>
+  <script src="cesium/Cesium/Cesium.js"></script>
+  <link href="cesium/Cesium/Widgets/widgets.css" rel="stylesheet">
   <style>
     html, body, #cesiumContainer {
-      width: 100%;
-      height: 100%;
-      margin: 0;
-      overflow: hidden;
+      width: 100%; height: 100%; margin: 0; padding: 0; overflow: hidden;
     }
-
-    #popup {
+    #header {
       position: absolute;
-      background: rgba(255, 255, 240, 0.95);
-      border: 1px solid #caa66a;
-      border-radius: 10px;
+      top: 0; width: 100%;
+      background: #f57c00;
+      color: white;
+      text-align: center;
       padding: 10px;
-      min-width: 200px;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-      pointer-events: none;
-      z-index: 100;
+      z-index: 5;
+      font-size: 1.5em;
+      font-weight: bold;
+      font-family: sans-serif;
     }
-
-    #banner {
+    #formContainer {
       position: absolute;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      background: #fff8e1;
-      border: 1px solid #dfb076;
+      top: 60px; left: 20px;
+      z-index: 10;
+      background: rgba(255,255,255,0.95);
       padding: 15px;
-      border-radius: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
-      max-width: 80%;
-      z-index: 200;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 300px;
+      font-family: sans-serif;
     }
-
-    .hidden {
+    #formContainer h3 {
+      margin-top: 0;
+      color: #f57c00;
+    }
+    input, textarea, button {
+      width: 100%;
+      margin-top: 8px;
+      font-size: 14px;
+      padding: 6px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    button {
+      background-color: #f57c00;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #e65100;
+    }
+    #errorMsg {
+      color: red;
       display: none;
+      margin-top: 8px;
+    }
+    #feedContainer {
+      position: absolute;
+      top: 60px; right: 20px;
+      z-index: 10;
+      background: rgba(255,255,255,0.95);
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      max-width: 300px;
+      font-family: sans-serif;
+      overflow-y: auto;
+      height: 90%;
+    }
+    #feedContainer h3 {
+      color: #f57c00;
+      margin-top: 0;
+    }
+    #feedList {
+      list-style-type: none;
+      padding: 0;
+    }
+    #feedList li {
+      background-color: #f3f3f3;
+      padding: 8px;
+      margin-bottom: 10px;
+      border-radius: 4px;
+    }
+    #feedList li strong {
+      color: #f57c00;
     }
   </style>
 </head>
 <body>
+  <div id="header">🎉 Happy 150th Anniversary, Wasatch Academy! 🎉</div>
   <div id="cesiumContainer"></div>
-  <div id="popup" class="hidden">
-    <div id="popupContent"></div>
+  <div id="formContainer">
+    <h3>Sign the Guestbook</h3>
+    <input id="name" placeholder="Your Name" />
+    <input id="years" placeholder="Years at Wasatch" />
+    <textarea id="message" placeholder="Your Message"></textarea>
+    <button onclick="dropPin()">Submit</button>
+    <p id="errorMsg"></p>
   </div>
-  <div id="banner" class="hidden">
-    <h3>Nearby Guests</h3>
-    <ul id="bannerList"></ul>
+
+  <div id="feedContainer">
+    <h3>Guestbook Messages</h3>
+    <ul id="feedList"></ul>
   </div>
+
+  <!-- Firebase SDKs -->
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
   <script>
-    const viewer = new Cesium.Viewer("cesiumContainer", {
-      terrainProvider: Cesium.createWorldTerrain(),
-      shouldAnimate: true,
-    });
-
-    viewer.scene.globe.enableLighting = true;
-
-    const firebaseData = {
-      "loc1": { lat: 40.76, lon: -111.89, messages: ["Hi from SLC!"], names: ["Ozma"] },
-      "loc2": { lat: 40.77, lon: -111.90, messages: ["Wasatch forever!"], names: ["Alex"] },
-      "loc3": { lat: 51.50, lon: -0.12, messages: ["Love from London!", "Cheers!"], names: ["Liam", "Sophie"] }
+    const firebaseConfig = {
+      apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
+      authDomain: "wasatch-150-guestbook.firebaseapp.com",
+      databaseURL: "https://wasatch-150-guestbook-default-rtdb.firebaseio.com",
+      projectId: "wasatch-150-guestbook",
+      storageBucket: "wasatch-150-guestbook.appspot.com",
+      messagingSenderId: "192403964274",
+      appId: "1:192403964274:web:daf759134d950edda35deb",
+      measurementId: "G-XYS5EHZ92L"
     };
 
-    function areClose(lat1, lon1, lat2, lon2, thresholdKm = 1.6) {
-      const toRad = deg => deg * Math.PI / 180;
-      const R = 6371;
-      const dLat = toRad(lat2 - lat1);
-      const dLon = toRad(lon2 - lon1);
-      const a = Math.sin(dLat/2)**2 + Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLon/2)**2;
-      const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-      return R * c < thresholdKm;
-    }
+    firebase.initializeApp(firebaseConfig);
+    const database = firebase.database();
+  </script>
 
-    function clusterMessages(entries) {
-      const clusters = [];
-      for (const id in entries) {
-        const entry = entries[id];
-        let found = false;
-        for (const cluster of clusters) {
-          if (areClose(entry.lat, entry.lon, cluster.lat, cluster.lon)) {
-            cluster.messages.push(...entry.messages);
-            cluster.names.push(...entry.names);
-            found = true;
-            break;
-          }
-        }
-        if (!found) {
-          clusters.push({
-            lat: entry.lat,
-            lon: entry.lon,
-            messages: [...entry.messages],
-            names: [...entry.names]
-          });
-        }
+  <script>
+    const viewer = new Cesium.Viewer('cesiumContainer');
+    let userLat = null;
+    let userLon = null;
+
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        userLat = pos.coords.latitude;
+        userLon = pos.coords.longitude;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0)
+        });
+      },
+      () => {
+        userLat = 39.5444;
+        userLon = -111.4566;
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(userLon, userLat, 2000000.0)
+        });
       }
-      return clusters;
+    );
+
+    function saveMessage(name, years, message, lat, lon) {
+      const newMessageRef = database.ref('messages').push();
+      newMessageRef.set({
+        name: name,
+        years: years,
+        message: message,
+        lat: lat,
+        lon: lon,
+        timestamp: Date.now()
+      });
     }
 
-    function displayName(names) {
-      if (names.length === 1) return names[0];
-      return `${names[0]} +${names.length - 1}`;
+    function dropPin() {
+      const name = document.getElementById("name").value.trim();
+      const years = document.getElementById("years").value.trim();
+      const message = document.getElementById("message").value.trim();
+      const errorMsg = document.getElementById("errorMsg");
+
+      const banned = ["badword1", "badword2", "racist", "offensive", "sex", "drugs"];
+      const check = `${name} ${years} ${message}`.toLowerCase();
+      const invalid = banned.some(w => check.includes(w));
+
+      if (!userLat || !userLon || !name || !years || !message || invalid) {
+        errorMsg.textContent = invalid ? "⚠️ Inappropriate content." : "⚠️ Please complete all fields.";
+        errorMsg.style.display = "block";
+        return;
+      }
+
+      errorMsg.style.display = "none";
+
+      saveMessage(name, years, message, userLat, userLon);
+
+      document.getElementById("name").value = "";
+      document.getElementById("years").value = "";
+      document.getElementById("message").value = "";
     }
 
-    const clusters = clusterMessages(firebaseData);
+    // Live update from Firebase
+    database.ref('messages').on('value', (snapshot) => {
+      const data = snapshot.val();
+      if (!data) return;
 
-    clusters.forEach(cluster => {
-      const entity = viewer.entities.add({
-        position: Cesium.Cartesian3.fromDegrees(cluster.lon, cluster.lat),
-        billboard: {
-          image: "https://cdn-icons-png.flaticon.com/512/684/684908.png",
-          scale: 0.05,
-        },
-        label: {
-          text: displayName(cluster.names),
-          font: "16px sans-serif",
-          fillColor: Cesium.Color.BLACK,
-          outlineColor: Cesium.Color.WHITE,
-          outlineWidth: 2,
-          style: Cesium.LabelStyle.FILL_AND_OUTLINE,
-          verticalOrigin: Cesium.VerticalOrigin.BOTTOM,
-          pixelOffset: new Cesium.Cartesian2(0, -30),
-        },
-        messageList: cluster.messages,
-        nameList: cluster.names
+      viewer.entities.removeAll();
+      const feedList = document.getElementById("feedList");
+      feedList.innerHTML = '';
+
+      Object.values(data).forEach(entry => {
+        viewer.entities.add({
+          position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
+          billboard: {
+            image: "Images/tigerpaw.png", // replace with full URL if needed
+            scale: 0.1,
+            verticalOrigin: Cesium.VerticalOrigin.BOTTOM
+          },
+          label: {
+            text: entry.name,
+            font: "14pt sans-serif",
+            fillColor: Cesium.Color.WHITE,
+            outlineColor: Cesium.Color.BLACK,
+            outlineWidth: 2,
+            verticalOrigin: Cesium.VerticalOrigin.TOP,
+            pixelOffset: new Cesium.Cartesian2(0, -40)
+          },
+          description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
+        });
+
+        const messageElement = document.createElement("li");
+        messageElement.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
+        feedList.prepend(messageElement);
       });
     });
-
-    const banner = document.getElementById("banner");
-    const bannerList = document.getElementById("bannerList");
-
-    const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-    handler.setInputAction(function (movement) {
-      const pickedObject = viewer.scene.pick(movement.position);
-      if (Cesium.defined(pickedObject) && pickedObject.id?.messageList) {
-        bannerList.innerHTML = pickedObject.id.messageList.map(
-          (msg, i) => `<li><strong>${pickedObject.id.nameList[i] || "Anonymous"}:</strong> ${msg}</li>`
-        ).join("");
-        banner.classList.remove("hidden");
-      } else {
-        banner.classList.add("hidden");
-      }
-    }, Cesium.ScreenSpaceEventType.LEFT_CLICK);
   </script>
 </body>
 </html>
