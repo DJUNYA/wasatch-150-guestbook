@@ -181,7 +181,9 @@
           pixelOffset: new Cesium.Cartesian2(0, -30),
         },
         messageList: cluster.messages,
-        nameList: cluster.names
+        nameList: cluster.names,
+        lat: cluster.lat,
+        lon: cluster.lon
       });
     });
 
@@ -196,6 +198,14 @@
           (msg, i) => `<li><strong>${pickedObject.id.nameList[i] || "Anonymous"}:</strong> ${msg}</li>`
         ).join("");
         banner.classList.remove("hidden");
+
+        viewer.camera.flyTo({
+          destination: Cesium.Cartesian3.fromDegrees(
+            pickedObject.id.lon,
+            pickedObject.id.lat,
+            1500000
+          )
+        });
       } else {
         banner.classList.add("hidden");
       }
