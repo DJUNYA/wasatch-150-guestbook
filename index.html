@@ -25,12 +25,23 @@
       position: absolute;
       top: 60px; left: 20px;
       z-index: 10;
-      background: rgba(255,255,255,0.65);
-      padding: 15px;
-      border-radius: 8px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.3);
+      background: url('WasatchShieldshape.png') no-repeat center center;
+      background-size: contain;
+      padding: 60px 30px;
       max-width: 300px;
       font-family: sans-serif;
+      color: #333;
+      border-radius: 0;
+      backdrop-filter: blur(2px);
+      transform: scale(0.1);
+      opacity: 0.2;
+      transform-origin: top left;
+      transition: all 0.4s ease;
+    }
+    #formContainer:hover {
+      transform: scale(1);
+      opacity: 1;
+      z-index: 20;
     }
     #formContainer h3 {
       margin-top: 0;
@@ -199,7 +210,7 @@
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
-            image: "Images/tigerpaw.png", // replace with full URL if needed
+            image: "Images/tigerpaw.png",
             scale: 0.1,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM
           },
