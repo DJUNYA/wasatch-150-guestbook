@@ -25,27 +25,27 @@
       position: absolute;
       top: 60px; left: 20px;
       z-index: 10;
-      background: url('WasatchShieldshape.png') no-repeat center center;
-      background-size: contain;
-      padding: 60px 30px;
+      background: rgba(255,255,255,0.85);
+      padding: 10px 15px;
       max-width: 300px;
       font-family: sans-serif;
       color: #333;
-      border-radius: 0;
-      backdrop-filter: blur(2px);
-      transform: scale(0.4);
-      opacity: 0.65;
-      transform-origin: top left;
-      transition: all 0.4s ease;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
     }
-    #formContainer:hover {
-      transform: scale(1);
-      opacity: 1;
-      z-index: 20;
-    }
-    #formContainer h3 {
-      margin-top: 0;
+    #formHeader {
+      margin: 0;
       color: #f57c00;
+      font-size: 1.2em;
+      cursor: pointer;
+    }
+    #formFields {
+      display: none;
+      margin-top: 10px;
+    }
+    #formContainer:hover #formFields {
+      display: block;
     }
     input, textarea, button {
       width: 100%;
@@ -104,13 +104,16 @@
 <body>
   <div id="header">🎉 Happy 150th Anniversary, Wasatch Academy! 🎉</div>
   <div id="cesiumContainer"></div>
+  
   <div id="formContainer">
-    <h3>Sign the Guestbook</h3>
-    <input id="name" placeholder="Your Name" />
-    <input id="years" placeholder="Years at Wasatch" />
-    <textarea id="message" placeholder="Your Message"></textarea>
-    <button onclick="dropPin()">Submit</button>
-    <p id="errorMsg"></p>
+    <h3 id="formHeader">Sign the Guestbook</h3>
+    <div id="formFields">
+      <input id="name" placeholder="Your Name" />
+      <input id="years" placeholder="Years at Wasatch" />
+      <textarea id="message" placeholder="Your Message"></textarea>
+      <button onclick="dropPin()">Submit</button>
+      <p id="errorMsg"></p>
+    </div>
   </div>
 
   <div id="feedContainer">
@@ -210,7 +213,7 @@
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
-            image: "Images/tigerpaw.png",
+            image: "Images/tigerpaw.png", // replace with full URL if needed
             scale: 0.1,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM
           },
