@@ -86,6 +86,11 @@
       color: #f57c00;
       margin-top: 0;
     }
+    #messageCount {
+      font-size: 1.1em;
+      margin-top: 5px;
+      color: #333;
+    }
     #feedList {
       list-style-type: none;
       padding: 0;
@@ -118,6 +123,7 @@
 
   <div id="feedContainer">
     <h3>Guestbook Messages</h3>
+    <div id="messageCount">Messages: 0</div>
     <ul id="feedList"></ul>
   </div>
 
@@ -210,6 +216,8 @@
       const feedList = document.getElementById("feedList");
       feedList.innerHTML = '';
 
+      let messageCount = 0; // Initialize message count
+
       Object.values(data).forEach(entry => {
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
@@ -246,7 +254,13 @@
           </div>
         `;
         feedList.prepend(messageElement);
+
+        // Increment the message count
+        messageCount++;
       });
+
+      // Update the message count in the UI
+      document.getElementById("messageCount").textContent = `Messages: ${messageCount}`;
     });
   </script>
 </body>
