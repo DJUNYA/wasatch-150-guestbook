@@ -99,27 +99,12 @@
     #feedList li strong {
       color: #f57c00;
     }
-    #countryLabel {
-      position: absolute;
-      bottom: 10px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: rgba(0,0,0,0.7);
-      color: #fff;
-      padding: 6px 12px;
-      border-radius: 4px;
-      font-family: sans-serif;
-      font-size: 14px;
-      display: none;
-      z-index: 20;
-    }
   </style>
 </head>
 <body>
   <div id="header">🎉 Happy 150th Anniversary, Wasatch Academy! 🎉</div>
   <div id="cesiumContainer"></div>
-  <div id="countryLabel"></div>
-
+  
   <div id="formContainer">
     <h3 id="formHeader">Sign the Guestbook</h3>
     <div id="formFields">
@@ -229,7 +214,7 @@
         viewer.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
-            image: "Images/tigerpaw.png",
+            image: "Images/tigerpaw.png", // replace with full URL if needed
             scale: 0.1,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM
           },
@@ -249,28 +234,6 @@
         messageElement.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
         feedList.prepend(messageElement);
       });
-    });
-
-    // Load country data and enable hover tooltips
-    Cesium.GeoJsonDataSource.load(
-      'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson',
-      { clampToGround: true }
-    ).then(function (dataSource) {
-      viewer.dataSources.add(dataSource);
-
-      const handler = new Cesium.ScreenSpaceEventHandler(viewer.scene.canvas);
-      const labelDiv = document.getElementById("countryLabel");
-
-      handler.setInputAction(function (movement) {
-        const pickedObject = viewer.scene.pick(movement.endPosition);
-        if (Cesium.defined(pickedObject) && pickedObject.id && pickedObject.id.properties) {
-          const name = pickedObject.id.properties.ADMIN || pickedObject.id.properties.NAME;
-          labelDiv.textContent = name;
-          labelDiv.style.display = "block";
-        } else {
-          labelDiv.style.display = "none";
-        }
-      }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
     });
   </script>
 </body>
