@@ -230,8 +230,21 @@
           description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
 
+        // Timestamp formatting
+        const date = new Date(entry.timestamp);
+        const timeString = date.toLocaleString(undefined, {
+          hour: '2-digit', minute: '2-digit',
+          month: 'short', day: 'numeric',
+          hour12: true
+        });
+
         const messageElement = document.createElement("li");
-        messageElement.innerHTML = `<strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}`;
+        messageElement.innerHTML = `
+          <strong>${entry.name}</strong> (${entry.years}):<br>${entry.message}
+          <div style="text-align: right; font-size: 0.7em; color: gray; margin-top: 5px;">
+            ${timeString}
+          </div>
+        `;
         feedList.prepend(messageElement);
       });
     });
