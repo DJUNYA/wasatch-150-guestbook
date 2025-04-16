@@ -144,6 +144,16 @@
 
     firebase.initializeApp(firebaseConfig);
     const database = firebase.database();
+    Cesium.GeoJsonDataSource.load(
+  'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson',
+  { clampToGround: true }
+).then(function (dataSource) {
+  viewer.dataSources.add(dataSource);
+
+  const entities = dataSource.entities.values;
+  for (let i = 0; i < entities.length; i++) {
+    const entity = entities[i];
+    const name = entity.properties.ADMIN || entity.properties.NAME || "Unknown";
   </script>
 
   <script>
