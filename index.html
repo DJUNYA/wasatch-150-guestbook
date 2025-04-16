@@ -104,21 +104,6 @@
     #feedList li strong {
       color: #f57c00;
     }
-    /* Style for the mini dropdown */
-    .dropdown-list {
-      position: absolute;
-      background-color: rgba(255, 255, 255, 0.9);
-      border-radius: 5px;
-      padding: 5px;
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.2);
-      display: none;
-      max-height: 150px;
-      overflow-y: auto;
-      font-size: 12px;
-    }
-    .dropdown-list div {
-      padding: 3px 5px;
-    }
   </style>
 </head>
 <body>
@@ -142,7 +127,6 @@
     <ul id="feedList"></ul>
   </div>
 
-  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
@@ -163,9 +147,27 @@
   </script>
 
   <script>
-    // Add the Cesium Ion Access Token here
-    Cesium.Ion.defaultAccessToken = 'your-access-token'; // Replace with your actual token
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3YWE4MzE1NC1jODkxLTQ3NjAtODcwNy02NWRiZWEzZGEwN2UiLCJpZCI6Mjg3MzMxLCJpYXQiOjE3NDM0NDMzNDV9.S6tbmjcKUP3pKouXxaA9zs-4z0Zr69CMcUUi3uXttGY';
     const viewer = new Cesium.Viewer('cesiumContainer');
+    const dataSource = new Cesium.CustomDataSource("GuestbookPins");
+    viewer.dataSources.add(dataSource);
+
+    dataSource.clustering.enabled = true;
+    dataSource.clustering.pixelRange = 50;
+    dataSource.clustering.minimumClusterSize = 2;
+
+    // Cluster styling
+    dataSource.clustering.clusterEvent.addEventListener((clusteredEntities, cluster) => {
+      cluster.label.show = true;
+      cluster.label.font = "16px sans-serif";
+      cluster.label.fillColor = Cesium.Color.ORANGE;
+      const names = clusteredEntities.map(e => e.properties.name.getValue());
+      cluster.label.text = `${names[0]} +${clusteredEntities.length - 1} more`;
+      cluster.billboard.show = true;
+      cluster.billboard.image = "Images/tigerpaw.png";
+      cluster.billboard.scale = 0.15;
+    });
+
     let userLat = null;
     let userLon = null;
 
@@ -223,25 +225,21 @@
       document.getElementById("message").value = "";
     }
 
-    // Live update from Firebase
+    // Firebase message listener
     database.ref('messages').on('value', (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
-      viewer.entities.removeAll();
+      dataSource.entities.removeAll();
       const feedList = document.getElementById("feedList");
       feedList.innerHTML = '';
-
-      let messageCount = 0; // Initialize message count
-      const dropdown = document.createElement('div');
-      dropdown.classList.add('dropdown-list');
-      document.body.appendChild(dropdown);
+      let messageCount = 0;
 
       Object.values(data).forEach(entry => {
-        viewer.entities.add({
+        const entity = dataSource.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
-            image: "Images/tigerpaw.png", // replace with full URL if needed
+            image: "Images/tigerpaw.png",
             scale: 0.1,
             verticalOrigin: Cesium.VerticalOrigin.BOTTOM
           },
@@ -254,10 +252,12 @@
             verticalOrigin: Cesium.VerticalOrigin.TOP,
             pixelOffset: new Cesium.Cartesian2(0, -40)
           },
+          properties: {
+            name: entry.name
+          },
           description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
 
-        // Timestamp formatting
         const date = new Date(entry.timestamp);
         const timeString = date.toLocaleString(undefined, {
           hour: '2-digit', minute: '2-digit',
@@ -273,31 +273,9 @@
           </div>
         `;
         feedList.prepend(messageElement);
-
-        // Increment the message count
         messageCount++;
-
-        // Mouseover for hover effect to show names in dropdown
-        viewer.screenSpaceEventHandler.setInputAction(function (movement) {
-          const pickedEntity = viewer.scene.pick(movement.endPosition);
-          if (Cesium.defined(pickedEntity)) {
-            if (pickedEntity.billboard && pickedEntity.billboard.image === "Images/tigerpaw.png") {
-              const names = Object.values(data)
-                .filter(item => item.lat === entry.lat && item.lon === entry.lon)
-                .map(item => item.name);
-              
-              dropdown.innerHTML = names.map(name => `<div>${name}</div>`).join('');
-              dropdown.style.display = 'block';
-              dropdown.style.left = `${movement.endPosition.x + 10}px`;
-              dropdown.style.top = `${movement.endPosition.y + 10}px`;
-            } else {
-              dropdown.style.display = 'none';
-            }
-          }
-        }, Cesium.ScreenSpaceEventType.MOUSE_MOVE);
       });
 
-      // Update the message count in the UI
       document.getElementById("messageCount").textContent = `Messages: ${messageCount}`;
     });
   </script>
