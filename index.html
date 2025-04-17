@@ -127,6 +127,7 @@
     <ul id="feedList"></ul>
   </div>
 
+  <!-- Firebase SDKs -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
 
@@ -147,25 +148,11 @@
   </script>
 
   <script>
+    // Set your Cesium access token here
     Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3YWE4MzE1NC1jODkxLTQ3NjAtODcwNy02NWRiZWEzZGEwN2UiLCJpZCI6Mjg3MzMxLCJpYXQiOjE3NDM0NDMzNDV9.S6tbmjcKUP3pKouXxaA9zs-4z0Zr69CMcUUi3uXttGY';
-    const viewer = new Cesium.Viewer('cesiumContainer');
-    const dataSource = new Cesium.CustomDataSource("GuestbookPins");
-    viewer.dataSources.add(dataSource);
 
-    dataSource.clustering.enabled = true;
-    dataSource.clustering.pixelRange = 50;
-    dataSource.clustering.minimumClusterSize = 2;
-
-    // Cluster styling
-    dataSource.clustering.clusterEvent.addEventListener((clusteredEntities, cluster) => {
-      cluster.label.show = true;
-      cluster.label.font = "16px sans-serif";
-      cluster.label.fillColor = Cesium.Color.ORANGE;
-      const names = clusteredEntities.map(e => e.properties.name.getValue());
-      cluster.label.text = `${names[0]} +${clusteredEntities.length - 1} more`;
-      cluster.billboard.show = true;
-      cluster.billboard.image = "Images/tigerpaw.png";
-      cluster.billboard.scale = 0.15;
+    const viewer = new Cesium.Viewer('cesiumContainer', {
+      terrainProvider: Cesium.createWorldTerrain()
     });
 
     let userLat = null;
@@ -217,7 +204,6 @@
       }
 
       errorMsg.style.display = "none";
-
       saveMessage(name, years, message, userLat, userLon);
 
       document.getElementById("name").value = "";
@@ -225,18 +211,20 @@
       document.getElementById("message").value = "";
     }
 
-    // Firebase message listener
+    const messageDataSource = new Cesium.CustomDataSource("guestbook");
+    viewer.dataSources.add(messageDataSource);
+
     database.ref('messages').on('value', (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
 
-      dataSource.entities.removeAll();
+      messageDataSource.entities.removeAll();
       const feedList = document.getElementById("feedList");
       feedList.innerHTML = '';
       let messageCount = 0;
 
       Object.values(data).forEach(entry => {
-        const entity = dataSource.entities.add({
+        messageDataSource.entities.add({
           position: Cesium.Cartesian3.fromDegrees(entry.lon, entry.lat),
           billboard: {
             image: "Images/tigerpaw.png",
@@ -251,9 +239,6 @@
             outlineWidth: 2,
             verticalOrigin: Cesium.VerticalOrigin.TOP,
             pixelOffset: new Cesium.Cartesian2(0, -40)
-          },
-          properties: {
-            name: entry.name
           },
           description: `<strong>${entry.name}</strong><br><em>${entry.years}</em><br>${entry.message}`
         });
@@ -277,6 +262,11 @@
       });
 
       document.getElementById("messageCount").textContent = `Messages: ${messageCount}`;
+
+      // Enable clustering
+      messageDataSource.clustering.enabled = true;
+      messageDataSource.clustering.pixelRange = 50;
+      messageDataSource.clustering.minimumClusterSize = 3;
     });
   </script>
 </body>
