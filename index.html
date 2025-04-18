@@ -152,11 +152,22 @@
     const dataSource = new Cesium.CustomDataSource("GuestbookPins");
     viewer.dataSources.add(dataSource);
 
+    // 🌍 Load country borders
+    Cesium.GeoJsonDataSource.load(
+      'https://raw.githubusercontent.com/datasets/geo-countries/master/data/countries.geojson',
+      {
+        stroke: Cesium.Color.YELLOW,
+        fill: Cesium.Color.TRANSPARENT,
+        strokeWidth: 1.5
+      }
+    ).then((geoDataSource) => {
+      viewer.dataSources.add(geoDataSource);
+    });
+
     dataSource.clustering.enabled = true;
     dataSource.clustering.pixelRange = 50;
     dataSource.clustering.minimumClusterSize = 2;
 
-    // Cluster styling
     dataSource.clustering.clusterEvent.addEventListener((clusteredEntities, cluster) => {
       cluster.label.show = true;
       cluster.label.font = "16px sans-serif";
@@ -225,7 +236,6 @@
       document.getElementById("message").value = "";
     }
 
-    // Firebase message listener
     database.ref('messages').on('value', (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
