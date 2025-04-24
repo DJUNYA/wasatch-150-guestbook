@@ -127,9 +127,9 @@
     <ul id="feedList"></ul>
   </div>
 
-  <!-- Firebase -->
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-app-compat.js"></script>
   <script src="https://www.gstatic.com/firebasejs/9.6.10/firebase-database-compat.js"></script>
+
   <script>
     const firebaseConfig = {
       apiKey: "AIzaSyA6vOy4m1M6IupAKTSAy4Z0QHd7JpSN1nM",
@@ -146,9 +146,8 @@
     const database = firebase.database();
   </script>
 
-  <!-- Cesium + Guestbook Logic -->
   <script>
-    Cesium.Ion.defaultAccessToken = 'your-cesium-token-here'; // replace with your actual token
+    Cesium.Ion.defaultAccessToken = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJqdGkiOiI3YWE4MzE1NC1jODkxLTQ3NjAtODcwNy02NWRiZWEzZGEwN2UiLCJpZCI6Mjg3MzMxLCJpYXQiOjE3NDM0NDMzNDV9.S6tbmjcKUP3pKouXxaA9zs-4z0Zr69CMcUUi3uXttGY';
     const viewer = new Cesium.Viewer('cesiumContainer');
     const dataSource = new Cesium.CustomDataSource("GuestbookPins");
     viewer.dataSources.add(dataSource);
@@ -157,6 +156,7 @@
     dataSource.clustering.pixelRange = 50;
     dataSource.clustering.minimumClusterSize = 2;
 
+    // Cluster styling
     dataSource.clustering.clusterEvent.addEventListener((clusteredEntities, cluster) => {
       cluster.label.show = true;
       cluster.label.font = "16px sans-serif";
@@ -225,6 +225,7 @@
       document.getElementById("message").value = "";
     }
 
+    // Firebase message listener
     database.ref('messages').on('value', (snapshot) => {
       const data = snapshot.val();
       if (!data) return;
